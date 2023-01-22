@@ -1,83 +1,85 @@
 #include "sort.h"
-
-int get_max(int *array, int size);
-void radix_counting_sort(int *array, size_t size, int sig, int *buff);
-void radix_sort(int *array, size_t size);
+#include <stdlib.h>
 
 /**
- * get_max - Get the maximum value in an array of integers.
- * @array: An array of integers.
- * @size: The size of the array.
+ * pow_10 - calculates a positive power of 10
+ * @power: power of 10 to calculate
  *
- * Return: The maximum integer in the array.
+ * Return: the corresponding power of 10
  */
-int get_max(int *array, int size)
+unsigned int pow_10(unsigned int power)
 {
-	int max, i;
+	unsigned int i, result;
 
-	for (max = array[0], i = 1; i < size; i++)
-	{
-		if (array[i] > max)
-			max = array[i];
-	}
-
-	return (max);
+	result = 1;
+	for (i = 0; i < power; i++)
+		result *= 10;
+	return (result);
 }
 
 /**
- * radix_counting_sort - Sort the significant digits of an array of integers
- *                       in ascending order using the counting sort algorithm.
- * @array: An array of integers.
- * @size: The size of the array.
- * @sig: The significant digit to sort on.
- * @buff: A buffer to store the sorted array.
+ * count_sort - sorts an array of integers in ascending order at a specific
+ * digit location using the Counting sort algorithm
+ * @array: array to sort
+ * @size: size of the array to sort
+ * @digit: digit to sort by
+ *
+ * Return: 1 if there is a need to keep sorting, 0 if not
  */
-void radix_counting_sort(int *array, size_t size, int sig, int *buff)
+unsigned int count_sort(int *array, size_t size, unsigned int digit)
 {
-	int count[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	size_t i;
+	int i, count[10] = {0};
+	int *copy = NULL;
+	size_t j, temp, total = 0;
+	unsigned int dp1, dp2, sort = 0;
 
-	for (i = 0; i < size; i++)
-		count[(array[i] / sig) % 10] += 1;
-
+	dp2 = pow_10(digit - 1);
+	dp1 = dp2 * 10;
+	copy = malloc(sizeof(int) * size);
+	if (copy == NULL)
+		exit(1);
+	for (j = 0; j < size; j++)
+	{
+		copy[j] = array[j];
+		if (array[j] / dp1 != 0)
+			sort = 1;
+	}
+	for (i = 0; i < 10 ; i++)
+		count[i] = 0;
+	for (j = 0; j < size; j++)
+		count[(array[j] % dp1) / dp2] += 1;
 	for (i = 0; i < 10; i++)
-		count[i] += count[i - 1];
-
-	for (i = size - 1; (int)i >= 0; i--)
 	{
-		buff[count[(array[i] / sig) % 10] - 1] = array[i];
-		count[(array[i] / sig) % 10] -= 1;
+		temp = count[i];
+		count[i] = total;
+		total += temp;
 	}
-
-	for (i = 0; i < size; i++)
-		array[i] = buff[i];
+	for (j = 0; j < size; j++)
+	{
+		array[count[(copy[j] % dp1) / dp2]] = copy[j];
+		count[(copy[j] % dp1) / dp2] += 1;
+	}
+	free(copy);
+	return (sort);
 }
 
 /**
- * radix_sort - Sort an array of integers in ascending
- *              order using the radix sort algorithm.
- * @array: An array of integers.
- * @size: The size of the array.
+ * radix_sort - sorts an array of integers in ascending order using
+ * the Radix sort algorithm
+ * @array: array to sort
+ * @size: size of the array
  *
- * Description: Implements the LSD radix sort algorithm. Prints
- * the array after each significant digit increase.
+ * Return: void
  */
 void radix_sort(int *array, size_t size)
 {
-	int max, sig, *buff;
+	unsigned int i, sort = 1;
 
 	if (array == NULL || size < 2)
 		return;
-
-	buff = malloc(sizeof(int) * size);
-	if (buff == NULL)
-		return;
-
-	max = get_max(array, size);
-	for (sig = 1; max / sig > 0; sig *= 10)
+	for (i = 1; sort == 1; i++)
 	{
-		radix_counting_sort(array, size, sig, buff);
+		sort = count_sort(array, size, i);
 		print_array(array, size);
 	}
-
-	free(buff);
+}
